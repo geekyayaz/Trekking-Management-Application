@@ -1,5 +1,11 @@
-backend\venv
-venv
-backend.controllers.__pycache__
-__pycache__
-instance
+backend/venv/
+venv/
+
+__pycache__/
+*.py[cod]
+
+backend/instance/
+*.db
+.env
+
+.vscode/
