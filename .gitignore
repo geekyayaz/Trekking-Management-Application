@@ -1,2 +1,5 @@
 backend\venv
 venv
+backend.controllers.__pycache__
+__pycache__
+instance
