@@ -2,8 +2,10 @@ import datetime
 from flask import Blueprint,request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
+
 from controllers.database import db
 from controllers.models import Trek, Booking, User, StaffProfile
+from controllers.cache import invalidate_cache
 
 admin_bp = Blueprint('admin_routes', __name__)
 
@@ -176,6 +178,7 @@ def create_trek():
  
     db.session.add(trek)
     db.session.commit()
+    invalidate_cache("treks:*")
  
     return jsonify({"message": "Trek created", "trek_id": trek.id}), 201
  
@@ -247,6 +250,7 @@ def update_trek(trek_id):
         trek.end_date = end_date
  
     db.session.commit()
+    invalidate_cache("treks:*")
     return jsonify({"message": "Trek updated"}), 200
  
  
@@ -270,6 +274,7 @@ def delete_trek(trek_id):
  
     db.session.delete(trek)
     db.session.commit()
+    invalidate_cache("treks:*")
     return jsonify({"message": "Trek removed"}), 200
  
  
@@ -488,6 +493,7 @@ def assign_staff_to_trek(trek_id):
  
     trek.assigned_staff_id = staff.id
     db.session.commit()
+    invalidate_cache("treks:*")
  
     return jsonify({
         "message": "Staff assigned to trek",
@@ -695,3 +701,18 @@ def trek_statistics():
         "active_staff": User.query.filter_by(role="staff", active=True).count(),
         "blacklisted_accounts": User.query.filter_by(blacklisted=True).count(),
     }), 200
+
+from controllers.tasks import generate_monthly_report
+
+@admin_bp.route("/reports/trigger-monthly", methods=["POST"])
+@jwt_required()
+def trigger_monthly_report():
+    role_error = require_role("admin")
+    if role_error:
+        return role_error
+
+    task = generate_monthly_report.delay()
+    return jsonify({
+        "message": "Monthly report generation started",
+        "task_id": task.id,
+    }), 202

@@ -10,6 +10,7 @@ from controllers.user_routes import user_bp
 from controllers.admin_routes import admin_bp
 from controllers.staff_routes import staff_bp
 from controllers.create_initialdata import seed_data
+from controllers.celery_app import init_celery
 
 
 def create_app():
@@ -18,6 +19,7 @@ def create_app():
 
     CORS(app)
     db.init_app(app)
+    init_celery(app)  # patches the shared `celery` object to run tasks inside this app's context
     JWTManager(app)
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -45,6 +47,8 @@ def create_app():
 
 
 app = create_app()
+
+from controllers.celery_app import celery
 
 
 @app.route("/")

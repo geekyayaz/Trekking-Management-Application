@@ -3,7 +3,9 @@ import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
+
 from controllers.database import db
+from controllers.cache import invalidate_cache
 from controllers.models import Trek, Booking, User, StaffProfile
 
 staff_bp = Blueprint("staff_routes", __name__)
@@ -170,6 +172,7 @@ def update_slots(trek_id):
 
     trek.available_slots = new_available
     db.session.commit()
+    invalidate_cache("treks:*")
 
     return jsonify({
         "message": "Slots updated",
@@ -223,7 +226,7 @@ def update_trek_status(trek_id):
             booking.status = "Completed"
 
     db.session.commit()
-
+    invalidate_cache("treks:*")
     return jsonify({"message": "Trek status updated", "trek_id": trek.id, "status": trek.status}), 200
 
 
@@ -321,4 +324,5 @@ def update_profile():
         profile.contact_number = data["contact_number"]
 
     db.session.commit()
+    invalidate_cache("treks:*")
     return jsonify({"message": "Profile updated"}), 200

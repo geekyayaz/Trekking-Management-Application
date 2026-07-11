@@ -80,10 +80,6 @@ class Booking(db.Model):
 
     user = db.relationship("User", backref=db.backref("booking", lazy="dynamic"))
 
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "trek_id", name="uq_user_trek_booking"),
-    )
-
     def __repr__(self):
         return f"<Booking user={self.user_id} trek={self.trek_id} status={self.status}>"
 

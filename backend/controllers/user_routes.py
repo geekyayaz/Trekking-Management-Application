@@ -14,15 +14,21 @@ def require_role(role_name):
     return None
 
 
+from controllers.cache import get_cached, set_cached
+
 @user_bp.route("/treks", methods=["GET"])
 @jwt_required()
 def trek_list():
-    query = Trek.query.filter_by(status="Open")
-
     difficulty = request.args.get("difficulty")
     location = request.args.get("location")
     duration = request.args.get("duration")
 
+    cache_key = f"treks:open:{difficulty}:{location}:{duration}"
+    cached = get_cached(cache_key)
+    if cached is not None:
+        return jsonify(cached), 200
+
+    query = Trek.query.filter_by(status="Open")
     if difficulty:
         query = query.filter(Trek.difficulty == difficulty)
     if location:
@@ -31,19 +37,15 @@ def trek_list():
         query = query.filter(Trek.duration_days == int(duration))
 
     treks = query.all()
+    result = [{
+        "id": t.id, "name": t.name, "country": t.country, "location": t.location,
+        "difficulty": t.difficulty, "duration_days": t.duration_days,
+        "available_slots": t.available_slots, "total_slots": t.total_slots,
+        "start_date": t.start_date.isoformat(), "end_date": t.end_date.isoformat(),
+    } for t in treks]
 
-    return jsonify([{
-        "id": t.id,
-        "name": t.name,
-        "country": t.country,
-        "location": t.location,
-        "difficulty": t.difficulty,
-        "duration_days": t.duration_days,
-        "available_slots": t.available_slots,
-        "total_slots": t.total_slots,
-        "start_date": t.start_date.isoformat(),
-        "end_date": t.end_date.isoformat(),
-    } for t in treks]), 200
+    set_cached(cache_key, result)
+    return jsonify(result), 200
 
 
 @user_bp.route("/treks/<int:trek_id>/book", methods=["POST"])
@@ -59,7 +61,7 @@ def book_trek(trek_id):
     if not trek:
         return jsonify({"message": "Trek not found"}), 404
 
-    if trek.status != "Open":
+    if trek.status != "Approved":
         return jsonify({"message": "This trek is not open for booking right now"}), 400
 
     if trek.available_slots <= 0:
@@ -172,3 +174,41 @@ def update_profile():
 
     db.session.commit()
     return jsonify({"message": "Profile updated"}), 200
+
+
+
+from controllers.tasks import export_booking_history
+
+@user_bp.route("/export-history", methods=["POST"])
+@jwt_required()
+def trigger_export_history():
+    role_error = require_role("user")
+    if role_error:
+        return role_error
+
+    user_id = int(get_jwt_identity())
+    task = export_booking_history.delay(user_id)
+
+    return jsonify({
+        "message": "Export started. You'll be emailed when it's ready.",
+        "task_id": task.id,
+    }), 202
+
+
+@user_bp.route("/export-history/status/<task_id>", methods=["GET"])
+@jwt_required()
+def export_history_status(task_id):
+    role_error = require_role("user")
+    if role_error:
+        return role_error
+
+    from controllers.celery_app import celery
+    result = celery.AsyncResult(task_id)
+
+    response = {"task_id": task_id, "state": result.state}
+    if result.state == "SUCCESS":
+        response["result"] = result.result
+    elif result.state == "FAILURE":
+        response["error"] = str(result.info)
+
+    return jsonify(response), 200
