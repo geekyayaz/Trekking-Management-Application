@@ -36,10 +36,6 @@ def get_owned_trek_or_error(trek_id, staff_id):
     return trek, None
 
 
-# ---------------------------------------------------------------------------
-# Dashboard
-# ---------------------------------------------------------------------------
-
 @staff_bp.route("/dashboard", methods=["GET"])
 @jwt_required()
 def dashboard():
@@ -74,9 +70,6 @@ def dashboard():
     }), 200
 
 
-# ---------------------------------------------------------------------------
-# Assigned treks (list / detail)
-# ---------------------------------------------------------------------------
 
 @staff_bp.route("/treks", methods=["GET"])
 @jwt_required()
@@ -138,9 +131,6 @@ def get_assigned_trek(trek_id):
     }), 200
 
 
-# ---------------------------------------------------------------------------
-# Trek operations: slots, status
-# ---------------------------------------------------------------------------
 
 @staff_bp.route("/treks/<int:trek_id>/slots", methods=["PUT"])
 @jwt_required()
@@ -207,7 +197,6 @@ def update_trek_status(trek_id):
             "message": f"Trek cannot be updated from its current status ('{trek.status}')"
         }), 400
 
-    # Simple forward-only lifecycle for staff-driven transitions.
     valid_transitions = {
         "Approved": {"Open"},
         "Open": {"Closed", "Completed"},
@@ -220,7 +209,7 @@ def update_trek_status(trek_id):
 
     trek.status = new_status
 
-    # When a trek completes, any still-"Booked" bookings are marked Completed too.
+
     if new_status == "Completed":
         for booking in trek.booking.filter_by(status="Booked"):
             booking.status = "Completed"
@@ -230,9 +219,6 @@ def update_trek_status(trek_id):
     return jsonify({"message": "Trek status updated", "trek_id": trek.id, "status": trek.status}), 200
 
 
-# ---------------------------------------------------------------------------
-# Participants
-# ---------------------------------------------------------------------------
 
 @staff_bp.route("/treks/<int:trek_id>/participants", methods=["GET"])
 @jwt_required()
@@ -264,10 +250,6 @@ def list_participants(trek_id):
         "booked_on": b.booking_date.isoformat(),
     } for b in bookings]), 200
 
-
-# ---------------------------------------------------------------------------
-# Staff's own profile
-# ---------------------------------------------------------------------------
 
 @staff_bp.route("/profile", methods=["GET"])
 @jwt_required()
@@ -312,8 +294,6 @@ def update_profile():
 
     data = request.get_json() or {}
 
-    # Staff can update their own contact info, not their name/email/role
-    # (those stay admin-controlled — see admin_routes.update_staff).
     if "phone" in data:
         staff.phone = data["phone"]
     if "address" in data:

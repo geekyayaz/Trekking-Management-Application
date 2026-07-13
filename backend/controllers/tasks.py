@@ -12,17 +12,14 @@ import requests
 from controllers.celery_app import celery
 from controllers.models import Booking, Trek, User
 
-# ---------------------------------------------------------------------------
-# Notification helpers (email + optional Google Chat webhook)
-# ---------------------------------------------------------------------------
 
 SMTP_HOST = os.environ.get("SMTP_HOST", "localhost")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 1025))  # 1025 = python -m smtpd for local testing
+SMTP_PORT = int(os.environ.get("SMTP_PORT", 1025))
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "no-reply@trekapp.local")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@trekapp.local")
-GCHAT_WEBHOOK_URL = os.environ.get("GCHAT_WEBHOOK_URL")  # optional
+GCHAT_WEBHOOK_URL = os.environ.get("GCHAT_WEBHOOK_URL")
 
 
 def send_email(to_email, subject, html_body, attachment_bytes=None, attachment_name=None):
@@ -53,9 +50,6 @@ def send_gchat_message(text):
         print(f"G-Chat webhook failed: {e}")
 
 
-# ---------------------------------------------------------------------------
-# Task 1: Daily reminder job (Celery Beat, runs every day at 08:00)
-# ---------------------------------------------------------------------------
 
 @celery.task(name="controllers.tasks.send_daily_reminders")
 def send_daily_reminders():
@@ -92,9 +86,6 @@ def send_daily_reminders():
     return {"treks_notified": len(upcoming_treks), "reminders_sent": reminders_sent}
 
 
-# ---------------------------------------------------------------------------
-# Task 2: Monthly activity report for Admin (Celery Beat, 1st of month, 06:00)
-# ---------------------------------------------------------------------------
 
 @celery.task(name="controllers.tasks.generate_monthly_report")
 def generate_monthly_report():
@@ -144,9 +135,6 @@ def generate_monthly_report():
     return {"treks_conducted": len(completed_treks), "total_participants": total_participants}
 
 
-# ---------------------------------------------------------------------------
-# Task 3: User-triggered CSV export of booking history (async, on demand)
-# ---------------------------------------------------------------------------
 
 @celery.task(name="controllers.tasks.export_booking_history", bind=True)
 def export_booking_history(self, user_id):
@@ -173,10 +161,9 @@ def export_booking_history(self, user_id):
             b.booking_date.isoformat(),
         ])
 
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # project root
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     EXPORTS_DIR = os.path.join(BASE_DIR, "exports")
 
-    # ...inside export_booking_history:
     os.makedirs(EXPORTS_DIR, exist_ok=True)
     filename = f"booking_history_user{user_id}_{self.request.id}.csv"
     filepath = os.path.join(EXPORTS_DIR, filename)

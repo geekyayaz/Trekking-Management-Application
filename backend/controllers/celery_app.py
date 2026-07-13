@@ -9,22 +9,22 @@ celery = Celery(
     "trekking_app",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=["controllers.tasks"],  # where @celery.task functions live
+    include=["controllers.tasks"],
 )
 
 celery.conf.update(
     timezone="Asia/Kolkata",
     enable_utc=True,
     task_track_started=True,
-    result_expires=60 * 60 * 24,  # keep task results for 24h so status polling works
+    result_expires=60 * 60 * 24,
     beat_schedule={
         "daily-trek-reminders": {
             "task": "controllers.tasks.send_daily_reminders",
-            "schedule": crontab(hour=8, minute=0),  # every day at 08:00
+            "schedule": crontab(hour=8, minute=0),
         },
         "monthly-activity-report": {
             "task": "controllers.tasks.generate_monthly_report",
-            "schedule": crontab(day_of_month=1, hour=6, minute=0),  # 1st of month, 06:00
+            "schedule": crontab(day_of_month=1, hour=6, minute=0),
         },
     },
 )

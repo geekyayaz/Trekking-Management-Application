@@ -12,7 +12,7 @@ class User(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
-    # 'admin', 'staff', or 'user'
+    # admin/user/stuff
     role = db.Column(db.String(20), nullable=False, default='user')
 
     active = db.Column(db.Boolean(), default=True, nullable=False)
@@ -40,7 +40,7 @@ class Trek(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     country = db.Column(db.String(50), nullable=False)
     location = db.Column(db.String(50), nullable=False)
-    difficulty = db.Column(db.String(20), nullable=False)  # Easy / Moderate / Hard
+    difficulty = db.Column(db.String(20), nullable=False)
 
     total_slots = db.Column(db.Integer, nullable=False)
     available_slots = db.Column(db.Integer, nullable=False)

@@ -23,7 +23,6 @@ def parse_date(value, field_name):
     except (TypeError, ValueError):
         raise ValueError(f"{field_name} must be in YYYY-MM-DD format")
 
-# Dashboard
 @admin_bp.route("/dashboard", methods=["GET"])
 @jwt_required()
 def dashboard():
@@ -46,7 +45,6 @@ def dashboard():
             for status in VALID_TREK_STATUSES
         },
     }), 200
-# Treks
 @admin_bp.route("/treks", methods=["GET"])
 @jwt_required()
 def trek_list():
@@ -278,10 +276,7 @@ def delete_trek(trek_id):
     return jsonify({"message": "Trek removed"}), 200
  
  
-# ---------------------------------------------------------------------------
-# Staff management (add / update / list / detail / assign)
-# ---------------------------------------------------------------------------
- 
+
 @admin_bp.route("/staff", methods=["GET"])
 @jwt_required()
 def list_staff():
@@ -383,7 +378,7 @@ def create_staff():
     staff_user.set_password(data["password"])
  
     db.session.add(staff_user)
-    db.session.flush()  # get staff_user.id before commit
+    db.session.flush()
  
     profile = StaffProfile(
         user_id=staff_user.id,
@@ -456,7 +451,6 @@ def remove_staff(staff_id):
                        f"Reassign those treks first."
         }), 400
  
-    # Soft delete: deactivate rather than hard-delete, to preserve history.
     staff.active = False
     if staff.staff_profile:
         staff.staff_profile.status = "removed"
@@ -480,7 +474,6 @@ def assign_staff_to_trek(trek_id):
     staff_id = data.get("staff_id")
  
     if staff_id is None:
-        # Unassign
         trek.assigned_staff_id = None
         db.session.commit()
         return jsonify({"message": "Staff unassigned from trek"}), 200
@@ -503,10 +496,7 @@ def assign_staff_to_trek(trek_id):
     }), 200
  
  
-# ---------------------------------------------------------------------------
-# User management (list / detail / blacklist / deactivate)
-# ---------------------------------------------------------------------------
- 
+
 @admin_bp.route("/users", methods=["GET"])
 @jwt_required()
 def list_users():
@@ -598,7 +588,6 @@ def update_account_status(account_id):
         account.active = bool(data["active"])
     if "blacklisted" in data:
         account.blacklisted = bool(data["blacklisted"])
-        # Blacklisting implies deactivation.
         if account.blacklisted:
             account.active = False
  
@@ -612,11 +601,35 @@ def update_account_status(account_id):
         "blacklisted": account.blacklisted,
     }), 200
  
- 
-# ---------------------------------------------------------------------------
-# Bookings (all records, across the platform)
-# ---------------------------------------------------------------------------
- 
+@admin_bp.route("/users/<int:user_id>", methods=["PUT"])
+@jwt_required()
+def update_user_details(user_id):
+    """Admin editing a trekker's profile fields (name, phone, address, email)."""
+    role_error = require_role("admin")
+    if role_error:
+        return role_error
+
+    user = User.query.filter_by(id=user_id, role="user").first()
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    data = request.get_json() or {}
+
+    if "name" in data:
+        user.name = data["name"]
+    if "phone" in data:
+        user.phone = data["phone"]
+    if "address" in data:
+        user.address = data["address"]
+    if "email" in data:
+        existing = User.query.filter(User.email == data["email"], User.id != user.id).first()
+        if existing:
+            return jsonify({"message": "Email already registered"}), 409
+        user.email = data["email"]
+
+    db.session.commit()
+    return jsonify({"message": "User updated"}), 200
+
 @admin_bp.route("/bookings", methods=["GET"])
 @jwt_required()
 def all_bookings():
@@ -651,10 +664,7 @@ def all_bookings():
     } for b in bookings]), 200
  
  
-# ---------------------------------------------------------------------------
-# Reports & statistics
-# ---------------------------------------------------------------------------
- 
+
 @admin_bp.route("/reports/stats", methods=["GET"])
 @jwt_required()
 def trek_statistics():

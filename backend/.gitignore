@@ -1,2 +1,4 @@
 exports/
 __pycache__
+exports
+venv

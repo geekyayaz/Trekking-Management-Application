@@ -28,8 +28,6 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"message": "Email already exists"}), 400
 
-    # Self-registration is always role='user' -- Trekkers only.
-    # Admin/Staff accounts are created programmatically / by admin, never here.
     user = User(
         username=username,
         email=email,
@@ -112,6 +110,4 @@ def admin_login():
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():
-    # JWTs are stateless -- "logout" just means the client discards the token.
-    # If you need real server-side invalidation, add a token blocklist (Redis works well here).
     return jsonify({"message": "Logout successful"}), 200

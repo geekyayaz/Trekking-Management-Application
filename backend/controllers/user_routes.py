@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from controllers.cache import invalidate_cache
 
 from controllers.database import db
 from controllers.models import Trek, Booking, User
@@ -61,7 +62,7 @@ def book_trek(trek_id):
     if not trek:
         return jsonify({"message": "Trek not found"}), 404
 
-    if trek.status != "Approved":
+    if trek.status != "Open":
         return jsonify({"message": "This trek is not open for booking right now"}), 400
 
     if trek.available_slots <= 0:
@@ -78,6 +79,7 @@ def book_trek(trek_id):
 
     db.session.add(booking)
     db.session.commit()
+    invalidate_cache("treks:*")
 
     return jsonify({
         "message": "Trek booked successfully",
@@ -105,6 +107,7 @@ def cancel_booking(booking_id):
     booking.status = "Cancelled"
     booking.trek.available_slots += 1
     db.session.commit()
+    invalidate_cache("treks:*")
 
     return jsonify({"message": "Booking cancelled"}), 200
 

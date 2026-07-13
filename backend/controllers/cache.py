@@ -7,7 +7,7 @@ redis_client = redis.Redis.from_url(
     decode_responses=True,
 )
 
-CACHE_EXPIRY_SECONDS = 300  # 5 minutes
+CACHE_EXPIRY_SECONDS = 300
 
 
 def get_cached(key):

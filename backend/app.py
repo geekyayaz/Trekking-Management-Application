@@ -19,7 +19,7 @@ def create_app():
 
     CORS(app)
     db.init_app(app)
-    init_celery(app)  # patches the shared `celery` object to run tasks inside this app's context
+    init_celery(app)
     JWTManager(app)
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
