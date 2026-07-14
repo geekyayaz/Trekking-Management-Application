@@ -3,7 +3,7 @@ from flask import Blueprint,request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 
-from controllers.database import db
+from controllers.models import db
 from controllers.models import Trek, Booking, User, StaffProfile
 from controllers.cache import invalidate_cache
 
@@ -18,10 +18,7 @@ def require_role(role_name):
     return None
 
 def parse_date(value, field_name):
-    try:
         return datetime.datetime.strptime(value, "%Y-%m-%d").date()
-    except (TypeError, ValueError):
-        raise ValueError(f"{field_name} must be in YYYY-MM-DD format")
 
 @admin_bp.route("/dashboard", methods=["GET"])
 @jwt_required()
@@ -45,6 +42,7 @@ def dashboard():
             for status in VALID_TREK_STATUSES
         },
     }), 200
+
 @admin_bp.route("/treks", methods=["GET"])
 @jwt_required()
 def trek_list():
@@ -92,7 +90,7 @@ def admin_get_trek(trek_id):
  
     trek = Trek.query.get(trek_id)
     if not trek:
-        return jsonify({"message": "Trek not found"}), 404
+        return jsonify({"message": "Trek is not found"}), 404
  
     registered = [{
         "booking_id": b.id,
@@ -152,9 +150,9 @@ def create_trek():
         return jsonify({"message": str(e)}), 400
  
     if total_slots <= 0:
-        return jsonify({"message": "total_slots must be greater than 0"}), 400
+        return jsonify({"message": "Total Slot must be greater than 0"}), 400
     if end_date < start_date:
-        return jsonify({"message": "end_date cannot be before start_date"}), 400
+        return jsonify({"message": "End Date cannot be before start_date"}), 400
  
     status = data.get("status", "Pending")
     if status not in VALID_TREK_STATUSES:
@@ -178,7 +176,7 @@ def create_trek():
     db.session.commit()
     invalidate_cache("treks:*")
  
-    return jsonify({"message": "Trek created", "trek_id": trek.id}), 201
+    return jsonify({"message": "Trek created Sucessfully", "trek_id": trek.id}), 201
  
  
 @admin_bp.route("/treks/<int:trek_id>", methods=["PUT"])
@@ -190,7 +188,7 @@ def update_trek(trek_id):
  
     trek = Trek.query.get(trek_id)
     if not trek:
-        return jsonify({"message": "Trek not found"}), 404
+        return jsonify({"message": "Trek is not found"}), 404
  
     data = request.get_json() or {}
  
@@ -482,7 +480,7 @@ def assign_staff_to_trek(trek_id):
     if not staff:
         return jsonify({"message": "Staff member not found"}), 404
     if not staff.active or staff.blacklisted:
-        return jsonify({"message": "Cannot assign an inactive or blacklisted staff member"}), 400
+        return jsonify({"message": "Staff is inactive or blacklisted"}), 400
  
     trek.assigned_staff_id = staff.id
     db.session.commit()
@@ -568,7 +566,6 @@ def get_user_detail(user_id):
 @admin_bp.route("/accounts/<int:account_id>/status", methods=["PUT"])
 @jwt_required()
 def update_account_status(account_id):
-    """Blacklist / activate-deactivate any account (user or staff) by id."""
     role_error = require_role("admin")
     if role_error:
         return role_error
@@ -604,7 +601,6 @@ def update_account_status(account_id):
 @admin_bp.route("/users/<int:user_id>", methods=["PUT"])
 @jwt_required()
 def update_user_details(user_id):
-    """Admin editing a trekker's profile fields (name, phone, address, email)."""
     role_error = require_role("admin")
     if role_error:
         return role_error

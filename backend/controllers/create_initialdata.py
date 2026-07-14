@@ -1,7 +1,5 @@
 import datetime
-
-from controllers.database import db
-from controllers.models import User, Trek
+from controllers.models import User, Trek, db
 
 DEFAULT_PASSWORD = "password123"
 

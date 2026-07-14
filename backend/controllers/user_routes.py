@@ -2,8 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from controllers.cache import invalidate_cache
 
-from controllers.database import db
-from controllers.models import Trek, Booking, User
+
+from controllers.models import db, Trek, Booking, User
 
 user_bp = Blueprint("user_routes", __name__)
 

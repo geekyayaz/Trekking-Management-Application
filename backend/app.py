@@ -2,9 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-from controllers.database import db
-from controllers.config import Config
-from controllers.models import User
+from controllers.models import db, User
 from controllers.auth import auth_bp
 from controllers.user_routes import user_bp
 from controllers.admin_routes import admin_bp
@@ -15,7 +13,11 @@ from controllers.celery_app import init_celery
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config["SECRET_KEY"] = "your_secret_key_here"
+    app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///trek.db'
+    app.config["JWT_SECRET_KEY"] = 'your_jwt_secret_key'
+    app.config["CACHE_TYPE"] = 'RedisCache'
+    app.config["CACHE_REDIS_URL"] = 'redis://localhost:6379/0'
 
     CORS(app)
     db.init_app(app)

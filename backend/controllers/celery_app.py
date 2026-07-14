@@ -31,15 +31,6 @@ celery.conf.update(
 
 
 def init_celery(app):
-    """
-    Call this once from app.py, after creating the Flask app, e.g.:
-
-        from controllers.celery_app import init_celery
-        celery = init_celery(app)
-
-    This makes every Celery task run inside app.app_context(), so tasks can
-    freely use `db.session`, query models, etc. -- exactly like a request handler.
-    """
 
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
