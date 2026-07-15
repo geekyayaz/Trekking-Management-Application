@@ -14,7 +14,7 @@ from controllers.celery_app import init_celery
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = "your_secret_key_here"
-    app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///trek.db'
+    app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///treking.db'
     app.config["JWT_SECRET_KEY"] = 'your_jwt_secret_key'
     app.config["CACHE_TYPE"] = 'RedisCache'
     app.config["CACHE_REDIS_URL"] = 'redis://localhost:6379/0'

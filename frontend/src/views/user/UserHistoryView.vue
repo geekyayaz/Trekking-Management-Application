@@ -1,13 +1,23 @@
 <template>
   <div>
-    <nav class="navbar navbar-expand bg-body-tertiary mb-4">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container-fluid">
-        <span class="navbar-brand">My Bookings</span>
-        <div class="d-flex align-items-center">
-          <router-link to="/user" class="btn btn-sm btn-link">Browse Treks</router-link>
-          <router-link to="/user/history" class="btn btn-sm btn-link">My Bookings</router-link>
-          <router-link to="/user/profile" class="btn btn-sm btn-link">Profile</router-link>
-          <button class="btn btn-outline-danger btn-sm" @click="logout">Logout</button>
+        <a class="navbar-brand" href="/">My Bookings</a>
+        <div class="collapse navbar-collapse show">
+          <ul class="navbar-nav mb-2 mb-lg-0 ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/user">Browse Treks</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="/user/history">My Bookings</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/user/profile">Profile</a>
+            </li>
+            <li class="nav-item">
+              <button class="btn btn-danger btn-sm" @click="logout">Logout</button>
+            </li>
+          </ul>
         </div>
       </div>
     </nav>
@@ -126,7 +136,7 @@ export default {
           { headers: this.authHeader() }
         )
         alert('Booking cancelled.')
-        this.loadHistory() // refresh the table
+        this.loadHistory()
       } catch (error) {
         alert('Could not cancel this booking.')
       }
@@ -149,7 +159,6 @@ export default {
     },
 
     async checkExportStatus(taskId) {
-      // Keep checking every 2 seconds until the job finishes
       try {
         const response = await axios.get(
           API_URL + '/export-history/status/' + taskId,
@@ -158,11 +167,11 @@ export default {
         const state = response.data.state
 
         if (state === 'SUCCESS') {
-          this.exportMessage = 'Export ready! Check your email for the CSV file.'
+          this.exportMessage = 'Export ready! Your download should start automatically.'
+          this.downloadFile(taskId)
         } else if (state === 'FAILURE') {
           this.exportMessage = 'Export failed. Please try again.'
         } else {
-          // still running - check again in 2 seconds
           setTimeout(() => {
             this.checkExportStatus(taskId)
           }, 2000)
@@ -172,9 +181,20 @@ export default {
       }
     },
 
+    downloadFile(taskId) {
+      const token = localStorage.getItem('token')
+      const url = API_URL + '/export-history/download/' + taskId + '?token=' + token
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', '')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    },
+
     logout() {
       localStorage.clear()
-      this.$router.push('/')
+      window.location.href = '/'
     }
   }
 }

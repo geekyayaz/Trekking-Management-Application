@@ -78,6 +78,9 @@
                 <td>{{ trek.available_slots }} / {{ trek.total_slots }}</td>
                 <td>{{ trek.start_date }} to {{ trek.end_date }}</td>
                 <td>
+                  <button><a :href="'/user/trek/' + trek.id" class="btn btn-outline-primary btn-sm">
+                    View More
+                  </a></button>
                   <button
                     class="btn btn-success btn-sm"
                     :disabled="trek.available_slots === 0"
@@ -99,24 +102,24 @@
 
 <script>
 import axios from 'axios'
-
+ 
 const API_URL = 'http://127.0.0.1:5000/api/user'
-
+ 
 export default {
   name: 'UserDashboardView',
-
+ 
   data() {
     return {
       userName: localStorage.getItem('name') || 'Trekker',
       treks: [],
       loading: false,
-
+ 
       filterDifficulty: '',
       filterLocation: '',
       filterDuration: null
     }
   },
-
+ 
   created() {
     const token = localStorage.getItem('token')
     const role = localStorage.getItem('role')
@@ -126,13 +129,13 @@ export default {
     }
     this.loadTreks()
   },
-
+ 
   methods: {
     authHeader() {
       const token = localStorage.getItem('token')
       return { Authorization: 'Bearer ' + token }
     },
-
+ 
     async loadTreks() {
       this.loading = true
       try {
@@ -147,7 +150,7 @@ export default {
         if (this.filterDuration) {
           params.duration = this.filterDuration
         }
-
+ 
         const response = await axios.get(API_URL + '/treks', {
           headers: this.authHeader(),
           params: params
@@ -158,7 +161,7 @@ export default {
       }
       this.loading = false
     },
-
+ 
     async bookTrek(trekId) {
       try {
         await axios.post(
@@ -173,10 +176,10 @@ export default {
         alert(message)
       }
     },
-
+ 
     logout() {
       localStorage.clear()
-      this.$router.push('/')
+      window.location.href = '/'
     }
   }
 }

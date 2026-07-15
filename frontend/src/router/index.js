@@ -8,6 +8,7 @@ import UserView from '../views/user/UserView.vue'
 import StaffTrekDetailView from '../views/staff/StaffTrekDetailView.vue'
 import UserHistoryView from '../views/user/UserHistoryView.vue'
 import UserProfileView from '../views/user/UserProfileView.vue'
+import Trekdetailview from '../views/user/Trekdetailview.vue'
 // admin routes
 import AdminView from '../views/admin/AdminView.vue'
 import BookingsTab from '../views/admin/BookingsTab.vue'
@@ -26,6 +27,7 @@ const routes = [
   { path: '/user', component: UserView },
   { path: '/:pathMatch(.*)*', redirect: '/' },
   { path: '/user/history', component: UserHistoryView },
+  { path: '/user/trek/:id', component: Trekdetailview },
   { path: '/user/profile', component: UserProfileView },
   { path: '/staff/trek/:id', component: StaffTrekDetailView },
   { path: '/admin/bookings', component: BookingsTab},

@@ -184,7 +184,6 @@ export default {
     },
 
     async openEditForm(staff) {
-      // list doesn't include "address" - fetch full detail first
       const response = await axios.get(API_URL + '/staff/' + staff.id, {
         headers: this.authHeader()
       })

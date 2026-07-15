@@ -2,3 +2,8 @@ exports/
 __pycache__
 exports
 venv
+instance
+celcery.log
+celerybeat-schedule
+MailHog_linux_amd64
+mailhog.log

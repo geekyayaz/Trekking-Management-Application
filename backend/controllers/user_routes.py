@@ -1,21 +1,17 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from controllers.cache import invalidate_cache
-
+from flask import Blueprint, request, jsonify, send_file
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, decode_token
+from controllers.cache import invalidate_cache, get_cached, set_cached
 
 from controllers.models import db, Trek, Booking, User
+from controllers.tasks import export_booking_history
 
 user_bp = Blueprint("user_routes", __name__)
 
 
 def require_role(role_name):
-
     if get_jwt().get("role") != role_name:
         return jsonify({"message": f"{role_name.capitalize()} access required"}), 403
     return None
-
-
-from controllers.cache import get_cached, set_cached
 
 @user_bp.route("/treks", methods=["GET"])
 @jwt_required()
@@ -47,6 +43,33 @@ def trek_list():
 
     set_cached(cache_key, result)
     return jsonify(result), 200
+
+
+@user_bp.route("/treks/<int:trek_id>", methods=["GET"])
+@jwt_required()
+def trek_detail(trek_id):
+    trek = Trek.query.get(trek_id)
+
+    if not trek:
+        return jsonify({"message": "Trek not found"}), 404
+
+    return jsonify({
+        "id": trek.id,
+        "name": trek.name,
+        "country": trek.country,
+        "location": trek.location,
+        "difficulty": trek.difficulty,
+        "duration_days": trek.duration_days,
+        "available_slots": trek.available_slots,
+        "total_slots": trek.total_slots,
+        "status": trek.status,
+        "start_date": trek.start_date.isoformat(),
+        "end_date": trek.end_date.isoformat(),
+        "description": trek.description,
+        "assigned_staff_name": trek.staff.name if trek.staff else None,
+        "assigned_staff_phone": trek.staff.phone if trek.staff else None,
+    }), 200
+
 
 
 @user_bp.route("/treks/<int:trek_id>/book", methods=["POST"])
@@ -139,6 +162,7 @@ def booking_history():
     } for b in bookings]), 200
 
 
+
 @user_bp.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
@@ -179,9 +203,6 @@ def update_profile():
     return jsonify({"message": "Profile updated"}), 200
 
 
-
-from controllers.tasks import export_booking_history
-
 @user_bp.route("/export-history", methods=["POST"])
 @jwt_required()
 def trigger_export_history():
@@ -215,3 +236,31 @@ def export_history_status(task_id):
         response["error"] = str(result.info)
 
     return jsonify(response), 200
+
+
+@user_bp.route("/export-history/download/<task_id>", methods=["GET"])
+def download_export(task_id):
+    # A real browser file-download link can't send an Authorization header,
+    # so the token is passed as a query param instead (?token=...) and
+    # verified manually here, rather than using @jwt_required().
+    token = request.args.get("token")
+    if not token:
+        return jsonify({"message": "Missing token"}), 401
+
+    try:
+        decoded = decode_token(token)
+    except Exception:
+        return jsonify({"message": "Invalid or expired token"}), 401
+
+    if decoded.get("role") != "user":
+        return jsonify({"message": "User access required"}), 403
+
+    from controllers.celery_app import celery
+    result = celery.AsyncResult(task_id)
+
+    if result.state != "SUCCESS":
+        return jsonify({"message": "Export not ready yet"}), 400
+
+    filepath = result.result.get("file_path")
+    filename = result.result.get("filename")
+    return send_file(filepath, as_attachment=True, download_name=filename)
